@@ -304,7 +304,7 @@ for p in imrange:
 	imgPlot = plt.imshow(img)
 	myimages.append([imgPlot])
 myAnim = animation.ArtistAnimation(fig, myImg, interval=1000, blit=True)
-myAnim.save(r"C:\Users\mu.yang\Documents\Mu\Penny\networkx\datasets\animation\animation.gif", writer='imagemagick', fps=1)
+myAnim.save(r"F:_MU\network\datasets\animation\animation.gif", writer='imagemagick', fps=1)
 '''
 
 
@@ -333,7 +333,3 @@ pdf['XYT']=np.array([
 					gdf['gid'].sample(5000,replace=True)					
 					]).T.values
 '''
-for i in infected_AgentSet:
-	if i['ts']>=tick and i['ts']<tick+1:
-		infected_PlaceSet.append(i[p])
-G=nx.watts_strogatz_graph(100, 6, 0.3, seed=None)
