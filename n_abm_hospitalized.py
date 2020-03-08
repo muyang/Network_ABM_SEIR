@@ -296,4 +296,4 @@ for tick in range(0,24*31,3):
 	print(l)
 
 df_res=pd.DataFrame(res) 
-df_res.columns=['tick','S','E','I','Is','R','D','ts']   
+df_res.columns=['tick','S','E','I','Is','H','R','D','ts']   
