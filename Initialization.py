@@ -12,12 +12,11 @@ import json
 import numpy as np
 import pandas as pd
 import requests
-import holoviews as hv
-hv.extension('bokeh')
-
-from bokeh.models import HoverTool
-from folium import FeatureGroup, LayerControl, Map, Marker
-from IPython.display import HTML,IFrame
+#import holoviews as hv
+#hv.extension('bokeh')
+#from bokeh.models import HoverTool
+#from folium import FeatureGroup, LayerControl, Map, Marker
+#from IPython.display import HTML,IFrame
 
 import matplotlib
 import matplotlib.cm as cm
