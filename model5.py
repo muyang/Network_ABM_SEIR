@@ -20,6 +20,7 @@ import numpy.random as rnd
 from datetime import datetime
 from numba import cuda
 import h5py
+import theano.tensor as tt
 ###########################################
 	
 '''
@@ -34,6 +35,7 @@ gid,Floor,Level2,x,y
 #@cuda.jit
 def step(ticks,interval,param,pdf,gdf,pInfect):
 	res=[]
+	print(pInfect)
 	for tick in range(0,ticks,interval):
 		if tick > 24*40:
 			pdf = pdf.loc[pdf.leave >= int(tick/24) - 40]
@@ -128,7 +130,8 @@ def step(ticks,interval,param,pdf,gdf,pInfect):
 	
 					for j in g.neighbors(i):
 						if g.nodes[j]['state'] == 'S':
-							if rnd.random() <= pInfect:	   #param[6]=pInfect
+							#if rnd.random() <= pInfect:	   #param[6]=pInfect
+							if tt.lt(rnd.random(), pInfect):
 								pdf.loc[pdf.pid==j,'state'] ='E'
 								x2 += 1
 							
@@ -202,7 +205,7 @@ def step(ticks,interval,param,pdf,gdf,pInfect):
 		if h==0:
 			iAll=pdf.loc[(pdf.state != 'S')].shape[0]
 			res.append(iAll)
-			print(tick)
+			print(tick,iAll)
 			
 # 			i=(tick,sNum,eNum,iNum,isNum,rNum,dNum,iaNum1,iaNum2,R0)
 # 			res.append(l)
@@ -217,7 +220,7 @@ def step(ticks,interval,param,pdf,gdf,pInfect):
 	with h5py.File(r'f:/_MU/data.h5','w') as hf:
 		hf.create_dataset('data',data=pdf.values)
 	'''
-	return res
+	return np.array(res)
 	
 ########################################################################
 np.random.seed(1125)
@@ -227,12 +230,12 @@ pdf=pd.read_pickle(r'f:/_MU/pdf_24h.pkl')
 gdf=pd.read_csv(r'f:/_MU/gid_xy.csv')
 gdf.loc[gdf.Level2.isna(),'Level2']=101
 df_y=pd.read_excel(r'f:/_MU/wh-2019-nCoV.xlsx')
-y=df_y[df_y.city=='武汉市']['确诊'].to_list()[:30]
+y=df_y[df_y.city=='武汉市']['确诊'].to_numpy()[:6]
 #folder_tmp_files = r'f:\_MU\network\datasets\animation'
 
 #pdf.loc[pdf.pid == 81138,'state'] = 'I'
 
-E_list=pdf.pid.sample(4)
+E_list=pdf.pid.sample(2)
 pdf.loc[pdf.pid.isin(E_list),'state'] = 'E'
 #pdf.apply(lambda p: 'r' if p.pid in [0, 995, 998, 1100] else 'g',axis=1)
 pdf['infected_duration']=0
@@ -267,14 +270,19 @@ with pm.Model() as mc_model:
 	alpha = pm.Normal('alpha', mu=0, sd=10)
 	beta = pm.Normal('beta', mu=0, sd=10)
 	sigma = pm.Uniform('sigma', lower=0, upper=4)
-	pInfect = pm.Uniform('pInfect', lower=0.01, upper=0.05)
+	pInfect = pm.Uniform('pInfect', 0.01, 0.5, testval=0.05)
 	params=[2,4,3,0.2,0.6,0.3,0.025,0.88,8,0.56]
-	yhat = alpha + beta * step(24*7,6,params,pdf,gdf,pInfect)
-
+	yhat = pm.Deterministic('yhat',alpha + beta * step(24*7,6,params,pdf,gdf,pInfect))
+	#func = lambda a,b,ps,d1,d2,pI: a+b*step(24*7,6,ps,d1,d2,pI)
+	#yhat = func(a=alpha,b=beta,ps=params,d1=pdf,d2=gdf,pI=pInfect)
 	likelihood = pm.Normal('y', mu=yhat, sd=sigma, observed=y)
+	
 	start=find_MAP()
-	step=NUTS()
-	trace = pm.sample(100,njobs=4,start=start, progressbar=True, verbose=False) #tune=1000
+	#step=NUTS()
+	step=Metropolis()
+
+	#trace = pm.sample(100,njobs=4,start=start, progressbar=True, verbose=False) #tune=1000
+	trace = pm.sample(100,njobs=4) #tune=1000
 
 pm.traceplot(trace)
 #print(pm.summary(trace))
